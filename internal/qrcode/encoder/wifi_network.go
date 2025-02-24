@@ -11,13 +11,6 @@ import (
 // e.g. WIFI:T:WPA;S:TP-Link;P:12345;H:true;
 const wifiFormat = "WIFI:T:%s;S:%s;P:%s;%s;"
 
-type WiFiNetwork struct {
-	SSID         string
-	Password     string
-	SecurityType qrcode.WIFISecurityType
-	Hidden       bool
-}
-
 type wifiNetworkContent struct {
 	ssid         string
 	password     string
