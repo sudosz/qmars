@@ -13,9 +13,9 @@ import (
 var (
 	testString           = "Hello, world!"
 	testBytes            = []byte(testString)
-	testWIFISecurityType = qrcode.WPA
-	testWIFISSID         = "TP-Link"
-	testWIFIPassword     = "12345"
+	testWiFiSecurityType = qrcode.WPA
+	testWiFiSSID         = "TP-Link"
+	testWiFiPassword     = "12345"
 	testHiddenStatus     = true
 
 	globalLevel = gqrcode.Highest
@@ -35,12 +35,12 @@ func encode2QR(data any) qrcode.QRCode {
 	return enc
 }
 
-func testWIFINetwork() string {
+func testWiFiNetwork() string {
 	hidden := ""
 	if testHiddenStatus {
 		hidden = "H:true"
 	}
-	return fmt.Sprintf(wifiFormat, string(testWIFISecurityType), testWIFISSID, testWIFIPassword, hidden)
+	return fmt.Sprintf(wifiFormat, string(testWiFiSecurityType), testWiFiSSID, testWiFiPassword, hidden)
 }
 
 func TestQREncodeString(t *testing.T) {
@@ -75,17 +75,17 @@ func TestQREncodeBytes(t *testing.T) {
 	}
 }
 
-func TestQREncodeWIFINetwork(t *testing.T) {
+func TestQREncodeWiFiNetwork(t *testing.T) {
 	out, err := NewQRCodeBuilder().
 		SetContent(
-			WiFiNetworkContent(testWIFISSID, testWIFIPassword, testWIFISecurityType, testHiddenStatus),
+			WiFiNetworkContent(testWiFiSSID, testWiFiPassword, testWiFiSecurityType, testHiddenStatus),
 		).Build()
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := encode2QR(testWIFINetwork())
+	expected := encode2QR(testWiFiNetwork())
 
 	if !reflect.DeepEqual(out.Bitmap(), expected.Bitmap()) {
 		t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", expected, out)

@@ -14,11 +14,19 @@ const wifiFormat = "WIFI:T:%s;S:%s;P:%s;%s;"
 type wifiNetworkContent struct {
 	ssid         string
 	password     string
-	securityType qrcode.WIFISecurityType
+	securityType qrcode.WiFiSecurityType
 	hiddenStatus bool
 }
 
-func WiFiNetworkContent(ssid string, password string, securityType qrcode.WIFISecurityType, hiddenStatus ...bool) Content {
+func WiFiNetworkContent(ssid, password string, securityType qrcode.WiFiSecurityType, hiddenStatus ...bool) Content {
+	return newWiFiNetworkContent(ssid, password, securityType, hiddenStatus...)
+}
+
+func WiFiNetworkNoPasswordContent(ssid string, hiddenStatus ...bool) Content {
+	return newWiFiNetworkContent(ssid, "", qrcode.NoPassword, hiddenStatus...)
+}
+
+func newWiFiNetworkContent(ssid, password string, securityType qrcode.WiFiSecurityType, hiddenStatus ...bool) Content {
 	h := false
 	if len(hiddenStatus) > 0 {
 		h = hiddenStatus[0]
@@ -27,19 +35,6 @@ func WiFiNetworkContent(ssid string, password string, securityType qrcode.WIFISe
 		ssid:         ssid,
 		password:     password,
 		securityType: securityType,
-		hiddenStatus: h,
-	}
-}
-
-func WiFiNetworkNoPasswordContent(ssid string, hiddenStatus ...bool) Content {
-	h := false
-	if len(hiddenStatus) > 0 {
-		h = hiddenStatus[0]
-	}
-	return &wifiNetworkContent{
-		ssid:         ssid,
-		password:     "",
-		securityType: qrcode.NoPassword,
 		hiddenStatus: h,
 	}
 }
@@ -60,7 +55,7 @@ func (c *wifiNetworkContent) SetNoPassword() Content {
 	return c
 }
 
-func (c *wifiNetworkContent) SetSecurityType(securityType qrcode.WIFISecurityType) Content {
+func (c *wifiNetworkContent) SetSecurityType(securityType qrcode.WiFiSecurityType) Content {
 	c.securityType = securityType
 	return c
 }

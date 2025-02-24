@@ -68,12 +68,12 @@ const (
 	V40
 )
 
-type WIFISecurityType string
+type WiFiSecurityType string
 
 const (
-	WPA  WIFISecurityType = "WPA"
-	WPA2 WIFISecurityType = "WPA2"
+	WPA  WiFiSecurityType = "WPA"
+	WPA2 WiFiSecurityType = "WPA2"
 
-	WEP        WIFISecurityType = "WEP"
-	NoPassword WIFISecurityType = "nopass"
+	WEP        WiFiSecurityType = "WEP"
+	NoPassword WiFiSecurityType = "nopass"
 )
