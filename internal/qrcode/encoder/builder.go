@@ -55,14 +55,19 @@ func (b *QRCodeBuilder) SetDisableBorder(disableBorder bool) *QRCodeBuilder {
 	return b
 }
 
-func (b *QRCodeBuilder) Build() (_ qrcode.QRCode, err error) {
+func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
 	data := b.content.Get()
-	var qr *gqrcode.QRCode
+
+	var (
+		qr  *gqrcode.QRCode
+		err error
+	)
 	if b.version > 0 {
 		qr, err = gqrcode.NewWithForcedVersion(data, int(b.version), gqrcode.RecoveryLevel(b.level))
 	} else {
 		qr, err = gqrcode.New(data, gqrcode.RecoveryLevel(b.level))
 	}
+
 	qr.ForegroundColor = b.fgColor
 	qr.BackgroundColor = b.bgColor
 	qr.DisableBorder = b.disableBorder
