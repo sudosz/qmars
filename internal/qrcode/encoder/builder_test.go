@@ -22,7 +22,7 @@ var (
 )
 
 func encode2QR(data any) qrcode.QRCode {
-	s := ""
+	var s string
 
 	switch v := data.(type) {
 	case string:
@@ -43,51 +43,56 @@ func testWiFiNetwork() string {
 	return fmt.Sprintf(wifiFormat, string(testWiFiSecurityType), testWiFiSSID, testWiFiPassword, hidden)
 }
 
-func TestQREncodeString(t *testing.T) {
-	out, err := NewQRCodeBuilder().
-		SetContent(StringContent(testString)).
-		Build()
-
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func testWiFiNetworkNoPassword() string {
+	hidden := ""
+	if testHiddenStatus {
+		hidden = "H:true"
 	}
-
-	expected := encode2QR(testString)
-
-	if !reflect.DeepEqual(out.Bitmap(), expected.Bitmap()) {
-		t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", expected, out)
-	}
+	return fmt.Sprintf(wifiFormat, string(qrcode.NoPassword), testWiFiSSID, "", hidden)
 }
 
-func TestQREncodeBytes(t *testing.T) {
-	out, err := NewQRCodeBuilder().
-		SetContent(BytesContent(testBytes)).
-		Build()
-
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestQREncode(t *testing.T) {
+	tests := []struct {
+		name     string
+		content  Content
+		expected qrcode.QRCode
+	}{
+		{
+			name:     "StringContent",
+			content:  StringContent(testString),
+			expected: encode2QR(testString),
+		},
+		{
+			name:     "BytesContent",
+			content:  BytesContent(testBytes),
+			expected: encode2QR(testBytes),
+		},
+		{
+			name: "WiFiNetworkContent",
+			content: WiFiNetworkContent(
+				testWiFiSSID, testWiFiPassword, testWiFiSecurityType, testHiddenStatus,
+			),
+			expected: encode2QR(testWiFiNetwork()),
+		},
+		{
+			name: "WiFiNetworkNoPasswordContent",
+			content: WiFiNetworkNoPasswordContent(
+				testWiFiSSID, testHiddenStatus,
+			),
+			expected: encode2QR(testWiFiNetworkNoPassword()),
+		},
 	}
 
-	expected := encode2QR(testBytes)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out, err := NewQRCodeBuilder().SetContent(tt.content).Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
 
-	if !reflect.DeepEqual(out.Bitmap(), expected.Bitmap()) {
-		t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", expected, out)
-	}
-}
-
-func TestQREncodeWiFiNetwork(t *testing.T) {
-	out, err := NewQRCodeBuilder().
-		SetContent(
-			WiFiNetworkContent(testWiFiSSID, testWiFiPassword, testWiFiSecurityType, testHiddenStatus),
-		).Build()
-
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	expected := encode2QR(testWiFiNetwork())
-
-	if !reflect.DeepEqual(out.Bitmap(), expected.Bitmap()) {
-		t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", expected, out)
+			if !reflect.DeepEqual(out.Bitmap(), tt.expected.Bitmap()) {
+				t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", tt.expected, out)
+			}
+		})
 	}
 }
