@@ -23,7 +23,7 @@ func WiFiNetworkContent(ssid, password string, securityType qrcode.WiFiSecurityT
 }
 
 func WiFiNetworkNoPasswordContent(ssid string, hiddenStatus ...bool) Content {
-	return newWiFiNetworkContent(ssid, "", qrcode.NoPassword, hiddenStatus...)
+	return newWiFiNetworkContent(ssid, "", qrcode.WiFiSecurityTypeNoPassword, hiddenStatus...)
 }
 
 func newWiFiNetworkContent(ssid, password string, securityType qrcode.WiFiSecurityType, hiddenStatus ...bool) Content {
@@ -51,7 +51,7 @@ func (c *wifiNetworkContent) SetPassword(password string) Content {
 
 func (c *wifiNetworkContent) SetNoPassword() Content {
 	c.password = ""
-	c.securityType = qrcode.NoPassword
+	c.securityType = qrcode.WiFiSecurityTypeNoPassword
 	return c
 }
 

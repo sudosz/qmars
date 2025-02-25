@@ -6,19 +6,22 @@ import (
 	"reflect"
 	"testing"
 
-	gqrcode "github.com/skip2/go-qrcode"
+	"github.com/makiuchi-d/gozxing"
+	gqrcode "github.com/makiuchi-d/gozxing/qrcode"
 	"github.com/sudosz/qmars/internal/qrcode"
 )
 
 var (
 	testString           = "Hello, world!"
 	testBytes            = []byte(testString)
-	testWiFiSecurityType = qrcode.WPA
+	testWiFiSecurityType = qrcode.WiFiSecurityTypeWPA
 	testWiFiSSID         = "TP-Link"
 	testWiFiPassword     = "12345"
 	testHiddenStatus     = true
 
-	globalLevel = gqrcode.Highest
+	globalLevel  = qrcode.ErrorCorrectionLevelLow
+	globalWidth  = qrcode.DefaultWidth
+	globalHeight = qrcode.DefaultHeight
 )
 
 func encode2QR(data any) qrcode.QRCode {
@@ -31,24 +34,21 @@ func encode2QR(data any) qrcode.QRCode {
 		s = base64.StdEncoding.EncodeToString(v)
 	}
 
-	enc, _ := gqrcode.New(s, globalLevel)
-	return enc
+	enc := gqrcode.NewQRCodeWriter()
+	hints := map[gozxing.EncodeHintType]interface{}{
+		gozxing.EncodeHintType_ERROR_CORRECTION: ecLevelToGozxingECLevel(globalLevel),
+	}
+
+	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, globalWidth, globalHeight, hints)
+	return newQRCode(b)
 }
 
-func testWiFiNetwork() string {
-	hidden := ""
-	if testHiddenStatus {
-		hidden = "H:true"
+func formatWiFiNetwork(securityType qrcode.WiFiSecurityType, ssid, password string, hidden bool) string {
+	hiddenStatus := ""
+	if hidden {
+		hiddenStatus = "H:true"
 	}
-	return fmt.Sprintf(wifiFormat, string(testWiFiSecurityType), testWiFiSSID, testWiFiPassword, hidden)
-}
-
-func testWiFiNetworkNoPassword() string {
-	hidden := ""
-	if testHiddenStatus {
-		hidden = "H:true"
-	}
-	return fmt.Sprintf(wifiFormat, string(qrcode.NoPassword), testWiFiSSID, "", hidden)
+	return fmt.Sprintf(wifiFormat, string(securityType), ssid, password, hiddenStatus)
 }
 
 func TestQREncode(t *testing.T) {
@@ -72,25 +72,30 @@ func TestQREncode(t *testing.T) {
 			content: WiFiNetworkContent(
 				testWiFiSSID, testWiFiPassword, testWiFiSecurityType, testHiddenStatus,
 			),
-			expected: encode2QR(testWiFiNetwork()),
+			expected: encode2QR(formatWiFiNetwork(testWiFiSecurityType, testWiFiSSID, testWiFiPassword, testHiddenStatus)),
 		},
 		{
 			name: "WiFiNetworkNoPasswordContent",
 			content: WiFiNetworkNoPasswordContent(
 				testWiFiSSID, testHiddenStatus,
 			),
-			expected: encode2QR(testWiFiNetworkNoPassword()),
+			expected: encode2QR(formatWiFiNetwork(qrcode.WiFiSecurityTypeNoPassword, testWiFiSSID, "", testHiddenStatus)),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			out, err := NewQRCodeBuilder().SetContent(tt.content).Build()
+			out, err := NewQRCodeBuilder().
+				SetErrorCorrectionLevel(globalLevel).
+				SetWidth(globalWidth).
+				SetHeight(globalHeight).
+				SetContent(tt.content).
+				Build()
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if !reflect.DeepEqual(out.Bitmap(), tt.expected.Bitmap()) {
+			if !reflect.DeepEqual(out.ToBoolArray(), tt.expected.ToBoolArray()) {
 				t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", tt.expected, out)
 			}
 		})

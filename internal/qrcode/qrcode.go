@@ -3,23 +3,24 @@ package qrcode
 import "image"
 
 type QRCode interface {
-	Bitmap() [][]bool
-	Image(int) image.Image
+	ToBoolArray() [][]bool
+	ToImage() image.Image
+	ToString(set string, unset string) string
 }
 
-type RecoveryLevel uint8
+type ErrorCorrectionLevel uint8
 
 const (
 	// Level L: 7% error recovery.
-	Low RecoveryLevel = iota
+	ErrorCorrectionLevelLow ErrorCorrectionLevel = iota
 	// Level M: 15% error recovery. Good default choice.
-	Medium
+	ErrorCorrectionLevelMedium
 	// Level Q: 25% error recovery.
-	Quartile
+	ErrorCorrectionLevelQuartile
 	// Level H: 30% error recovery.
-	High
+	ErrorCorrectionLevelHigh
 
-	DefaultRecoveryLevel = High
+	DefaultRecoveryLevel = ErrorCorrectionLevelHigh
 )
 
 type Version uint8
@@ -71,9 +72,14 @@ const (
 type WiFiSecurityType string
 
 const (
-	WPA  WiFiSecurityType = "WPA"
-	WPA2 WiFiSecurityType = "WPA2"
+	WiFiSecurityTypeWPA  WiFiSecurityType = "WPA"
+	WiFiSecurityTypeWPA2 WiFiSecurityType = "WPA2"
 
-	WEP        WiFiSecurityType = "WEP"
-	NoPassword WiFiSecurityType = "nopass"
+	WiFiSecurityTypeWEP        WiFiSecurityType = "WEP"
+	WiFiSecurityTypeNoPassword WiFiSecurityType = "nopass"
+)
+
+const (
+	DefaultWidth  = 14
+	DefaultHeight = 14
 )
