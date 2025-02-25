@@ -1,6 +1,7 @@
 package encoder
 
 import (
+	"errors"
 	"image"
 
 	"github.com/makiuchi-d/gozxing"
@@ -10,7 +11,7 @@ import (
 )
 
 type qrCode struct {
-	bArr      [][]bool
+	bArr [][]bool
 	*gozxing.BitMatrix
 }
 
@@ -90,6 +91,10 @@ func (b *QRCodeBuilder) SetHeight(h int) *QRCodeBuilder {
 }
 
 func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
+	if b.content == nil {
+		return nil, errors.New("content is empty")
+	}
+
 	data := b.content.Get()
 
 	hints := map[gozxing.EncodeHintType]interface{}{
