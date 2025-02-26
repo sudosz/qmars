@@ -22,55 +22,48 @@ func ecLevelToGozxingECLevel(l qrcode.ErrorCorrectionLevel) decoder.ErrorCorrect
 }
 
 var (
-	smallChars = map[int]rune{
-		0:     ' ',
-		1:     '▀',
-		2:     '▄',
-		1 | 2: '█',
-	}
-	smallCharsInvert = map[int]rune{
-		0:     '█',
-		1:     '▄',
-		2:     '▀',
-		1 | 2: ' ',
-	}
+	smallChars = [4]rune{' ', '▀', '▄', '█'}
 )
 
-func getCharOfBlockBools(bools ...bool) int {
-	idx := 0
+func getCharOfBlockBools(invert bool, bools ...bool) uint8 {
+	var idx uint8
 	for i, b := range bools {
 		if b {
 			idx |= 1 << i
 		}
 	}
+	if invert {
+		return ^idx & 0b11
+	}
 	return idx
 }
 
-func getQRCodeSmallestString(qr qrcode.QRCode, charset map[int]rune) string {
-	b := &strings.Builder{}
+func qrCode2SmallString(qr qrcode.QRCode, invert bool) string {
 	arr := qr.ToBoolArray()
 	h := len(arr)
-	hodd := h%2 == 1
+	w := len(arr[0])
+	var sb strings.Builder
+	sb.Grow((w + 1) * ((h + 1) / 2))
+
 	for i := 0; i < h-h%2; i += 2 {
-		w := len(arr[i])
 		for j := 0; j < w; j++ {
-			b.WriteRune(charset[getCharOfBlockBools(arr[i][j], arr[i+1][j])])
+			sb.WriteRune(smallChars[getCharOfBlockBools(invert, arr[i][j], arr[i+1][j])])
 		}
-		b.WriteRune('\n')
+		sb.WriteRune('\n')
 	}
-	if hodd {
-		for j := 0; j < len(arr[h-1]); j++ {
-			b.WriteRune(charset[getCharOfBlockBools(arr[h-1][j], false)])
+	if h%2 == 1 {
+		for j := 0; j < w; j++ {
+			sb.WriteRune(smallChars[getCharOfBlockBools(invert, arr[h-1][j], false)])
 		}
-		b.WriteRune('\n')
+		sb.WriteRune('\n')
 	}
-	return b.String()
+	return sb.String()
 }
 
-func GetQRCodeSmallestString(qr qrcode.QRCode) string {
-	return getQRCodeSmallestString(qr, smallChars)
+func QRCode2SmallString(qr qrcode.QRCode) string {
+	return qrCode2SmallString(qr, false)
 }
 
-func GetQRCodeSmallestStringInvert(qr qrcode.QRCode) string {
-	return getQRCodeSmallestString(qr, smallCharsInvert)
+func QRCode2SmallStringInvert(qr qrcode.QRCode) string {
+	return qrCode2SmallString(qr, true)
 }
