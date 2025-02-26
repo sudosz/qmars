@@ -1,7 +1,6 @@
 package qrcode
 
 import (
-	"fmt"
 	"image"
 	icolor "image/color"
 	"strings"
@@ -74,7 +73,6 @@ func (q QRCode) ToSmallString() string {
 
 	printer := createColorPrinter(q.fg, q.bg)
 
-	fmt.Println(q.invert)
 	for i := 0; i < q.h; i += 2 {
 		printer.SetWriter(&sb)
 		for j := 0; j < q.w; j++ {

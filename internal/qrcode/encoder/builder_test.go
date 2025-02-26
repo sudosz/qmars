@@ -4,11 +4,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"image/color"
-	"reflect"
 	"testing"
 
 	"github.com/makiuchi-d/gozxing"
 	gqrcode "github.com/makiuchi-d/gozxing/qrcode"
+	"github.com/stretchr/testify/assert"
 	"github.com/sudosz/qmars/internal/qrcode"
 )
 
@@ -20,9 +20,9 @@ var (
 	testWiFiPassword     = "12345"
 	testHiddenStatus     = true
 
-	globalLevel  = qrcode.ErrorCorrectionLevelLow
-	globalWidth  = qrcode.DefaultWidth
-	globalHeight = qrcode.DefaultHeight
+	globalLevel      = qrcode.ErrorCorrectionLevelLow
+	globalWidth      = qrcode.DefaultWidth
+	globalHeight     = qrcode.DefaultHeight
 	globalForeground = color.RGBA{
 		R: 51,
 		G: 51,
@@ -104,12 +104,8 @@ func TestQREncode(t *testing.T) {
 				SetBackground(globalBackground).
 				SetContent(tt.content).
 				Build()
-			if err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if !reflect.DeepEqual(out.ToBoolArray(), tt.expected.ToBoolArray()) {
-				t.Fatalf("expected:\n	%#v\n	got:\n	%#v\n", tt.expected, out)
+			if assert.NoError(t, err) {
+				assert.Equal(t, tt.expected, out)
 			}
 		})
 	}
