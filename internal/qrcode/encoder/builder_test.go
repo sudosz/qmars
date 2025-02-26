@@ -35,7 +35,7 @@ var (
 	}
 )
 
-func encode2QR(data any) qrcode.QRCode {
+func encode2QR(data any) *qrcode.QRCode {
 	var s string
 
 	switch v := data.(type) {
@@ -51,7 +51,7 @@ func encode2QR(data any) qrcode.QRCode {
 	}
 
 	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, globalWidth, globalHeight, hints)
-	return newQRCode(b, globalForeground, globalBackground)
+	return qrcode.NewQRCode(b, false, globalForeground, globalBackground)
 }
 
 func formatWiFiNetwork(securityType qrcode.WiFiSecurityType, ssid, password string, hidden bool) string {
@@ -66,7 +66,7 @@ func TestQREncode(t *testing.T) {
 	tests := []struct {
 		name     string
 		content  Content
-		expected qrcode.QRCode
+		expected *qrcode.QRCode
 	}{
 		{
 			name:     "StringContent",

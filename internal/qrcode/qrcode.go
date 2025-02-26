@@ -1,96 +1,135 @@
 package qrcode
 
 import (
+	"fmt"
 	"image"
-	"image/color"
+	icolor "image/color"
+	"strings"
+
+	"golang.org/x/image/draw"
 )
 
-type QRCode interface {
-	ToBoolArray() [][]bool
-	ToImage() image.Image
-	Background() color.Color
-	Foreground() color.Color
-	ToString(set, unset string) string
-	ToColoredString(set, unset string) string
+type QRCode struct {
+	bArr   [][]bool
+	fg, bg icolor.Color
+	invert bool
+	w, h   int
+	BitMatrix
 }
 
-type ErrorCorrectionLevel uint8
+type BitMatrix interface {
+	GetWidth() int
+	GetHeight() int
+	Get(x, y int) bool
+}
 
-const (
-	// Level L: 7% error recovery.
-	ErrorCorrectionLevelLow ErrorCorrectionLevel = iota
-	// Level M: 15% error recovery. Good default choice.
-	ErrorCorrectionLevelMedium
-	// Level Q: 25% error recovery.
-	ErrorCorrectionLevelQuartile
-	// Level H: 30% error recovery.
-	ErrorCorrectionLevelHigh
+func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *QRCode {
+	qr := &QRCode{
+		BitMatrix: b,
+		w:         b.GetWidth(),
+		h:         b.GetHeight(),
+		invert:    invert,
+	}
 
-	DefaultRecoveryLevel = ErrorCorrectionLevelHigh
-)
+	if len(colors) > 0 {
+		qr.fg = colors[0]
+	} else {
+		qr.fg = DefaultForeground
+	}
 
-type Version uint8
+	if len(colors) > 1 {
+		qr.bg = colors[1]
+	} else {
+		qr.bg = DefaultBackground
+	}
 
-const (
-	DefaultVersion Version = iota
-	V1
-	V2
-	V3
-	V4
-	V5
-	V6
-	V7
-	V8
-	V9
-	V10
-	V11
-	V12
-	V13
-	V14
-	V15
-	V16
-	V17
-	V18
-	V19
-	V20
-	V21
-	V22
-	V23
-	V24
-	V25
-	V26
-	V27
-	V28
-	V29
-	V30
-	V31
-	V32
-	V33
-	V34
-	V35
-	V36
-	V37
-	V38
-	V39
-	V40
-)
+	return qr
+}
 
-type WiFiSecurityType string
+func (q *QRCode) SetForeground(fg icolor.Color) { q.fg = fg }
+func (q *QRCode) SetBackground(bg icolor.Color) { q.bg = bg }
+func (q *QRCode) SetWidth(w int)                { q.w = w }
+func (q *QRCode) SetHeight(h int)               { q.h = h }
+func (q *QRCode) SetInvert(i bool)              { q.invert = i }
 
-const (
-	WiFiSecurityTypeWPA  WiFiSecurityType = "WPA"
-	WiFiSecurityTypeWPA2 WiFiSecurityType = "WPA2"
+func (q QRCode) GetForeground() icolor.Color { return q.fg }
+func (q QRCode) GetBackground() icolor.Color { return q.bg }
+func (q QRCode) GetWidth() int               { return q.w }
+func (q QRCode) GetHeight() int              { return q.h }
 
-	WiFiSecurityTypeWEP        WiFiSecurityType = "WEP"
-	WiFiSecurityTypeNoPassword WiFiSecurityType = "nopass"
-)
+func (q QRCode) ToBoolArray() [][]bool {
+	q.bArr = make([][]bool, q.h)
+	for i := 0; i < q.h; i++ {
+		q.bArr[i] = make([]bool, q.w)
+		for j := 0; j < q.w; j++ {
+			q.bArr[i][j] = q.Get(j, i)
+		}
+	}
+	return q.bArr
+}
 
-const (
-	DefaultWidth  = 14
-	DefaultHeight = 14
-)
+func (q QRCode) ToSmallString() string {
+	var sb strings.Builder
+	sb.Grow((q.w + 1) * (q.h / 2))
 
-var (
-	DefaultForeground = color.Black
-	DefaultBackground = color.White
-)
+	printer := createColorPrinter(q.fg, q.bg)
+
+	fmt.Println(q.invert)
+	for i := 0; i < q.h; i += 2 {
+		printer.SetWriter(&sb)
+		for j := 0; j < q.w; j++ {
+			sb.WriteRune(smallChars[getCharOfBlockBools(q.invert, q.Get(i, j), q.Get(i+1, j))])
+		}
+		printer.UnsetWriter(&sb)
+		sb.WriteRune('\n')
+	}
+
+	return sb.String()
+}
+
+func (q QRCode) ToString(set, unset string) string {
+	var sb strings.Builder
+	l := 1 + q.w*max(len(set), len(unset))
+	sb.Grow(l * q.h)
+
+	printer := createColorPrinter(q.fg, q.bg)
+
+	if q.invert {
+		set, unset = unset, set
+	}
+
+	for i := 0; i < q.h; i++ {
+		printer.SetWriter(&sb)
+		for j := 0; j < q.w; j++ {
+			if q.Get(j, i) {
+				sb.WriteString(set)
+			} else {
+				sb.WriteString(unset)
+			}
+		}
+		printer.UnsetWriter(&sb)
+		sb.WriteRune('\n')
+	}
+
+	return sb.String()
+}
+
+func (q QRCode) ToResizedImage(w, h int) image.Image {
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	draw.NearestNeighbor.Scale(dst, dst.Rect, q, q.Bounds(), draw.Over, nil)
+	return dst
+}
+
+func (q QRCode) ColorModel() icolor.Model { return icolor.RGBAModel }
+
+func (q QRCode) Bounds() image.Rectangle {
+	return image.Rect(0, 0, q.GetWidth(), q.GetHeight())
+}
+
+func (q QRCode) At(x, y int) icolor.Color {
+	c := q.bg
+	if q.Get(x, y) {
+		c = q.fg
+	}
+	return c
+}

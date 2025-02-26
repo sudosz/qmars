@@ -15,6 +15,7 @@ type QRCodeBuilder struct {
 	level         qrcode.ErrorCorrectionLevel
 	version       qrcode.Version
 	disableBorder bool
+	invert bool
 	width         int
 	height        int
 	fg, bg        icolor.Color
@@ -71,7 +72,12 @@ func (b *QRCodeBuilder) SetBackground(bg icolor.Color) *QRCodeBuilder {
 	return b
 }
 
-func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
+func (b *QRCodeBuilder) SetInvert(i bool) *QRCodeBuilder {
+	b.invert = i
+	return b
+}
+
+func (b *QRCodeBuilder) Build() (*qrcode.QRCode, error) {
 	if b.content == nil {
 		return nil, errors.New("content is empty")
 	}
@@ -88,11 +94,10 @@ func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
 		hints[gozxing.EncodeHintType_QR_VERSION] = b.version
 	}
 
-	enc := gqrcode.NewQRCodeWriter()
-	bit, err := enc.Encode(data, gozxing.BarcodeFormat_QR_CODE, b.width, b.height, hints)
+	bit, err := gqrcode.NewQRCodeWriter().Encode(data, gozxing.BarcodeFormat_QR_CODE, b.width, b.height, hints)
 	if err != nil {
 		return nil, err
 	}
-
-	return newQRCode(bit, b.fg, b.bg), nil
+	
+	return qrcode.NewQRCode(bit, b.invert, b.fg, b.bg), nil
 }
