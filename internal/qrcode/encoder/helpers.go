@@ -1,8 +1,11 @@
 package encoder
 
 import (
+	"image"
+	icolor "image/color"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/makiuchi-d/gozxing/qrcode/decoder"
 	"github.com/sudosz/qmars/internal/qrcode"
 )
@@ -66,4 +69,53 @@ func QRCode2SmallString(qr qrcode.QRCode) string {
 
 func QRCode2SmallStringInvert(qr qrcode.QRCode) string {
 	return qrCode2SmallString(qr, true)
+}
+
+func QRCode2ColoredSmallString(qr qrcode.QRCode, fg, bg icolor.Color) string {
+	coloredString := QRCode2SmallString(qr)
+	return colorizeString(coloredString, fg, bg)
+}
+
+func QRCode2ColoredSmallStringInvert(qr qrcode.QRCode, fg, bg icolor.Color) string {
+	coloredString := QRCode2SmallStringInvert(qr)
+	return colorizeString(coloredString, fg, bg)
+}
+
+func colorizeString(s string, fg, bg icolor.Color) string {
+	fR, fG, fB, _ := fg.RGBA()
+	bR, bG, bB, _ := bg.RGBA()
+	col := color.RGB(int(fR>>8), int(fG>>8), int(fB>>8)).AddBgRGB(int(bR>>8), int(bG>>8), int(bB>>8))
+
+	var b strings.Builder
+	b.Grow(len(s) + strings.Count(s, "\n"))
+
+	for _, line := range strings.Split(s, "\n") {
+		col.Fprint(&b, line)
+		b.WriteByte('\n')
+	}
+
+	return b.String()
+}
+
+func colorsEqual(c1, c2 icolor.Color) bool {
+	r1, g1, b1, _ := c1.RGBA()
+	r2, g2, b2, _ := c2.RGBA()
+	return r1 == r2 && g1 == g2 && b1 == b2
+}
+
+func coloredImage(img image.Image, lastFg, fg, bg icolor.Color) image.Image {
+	bounds := img.Bounds()
+	coloredImg := image.NewRGBA(bounds)
+
+	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			if colorsEqual(img.At(x, y), lastFg) {
+				coloredImg.Set(x, y, fg)
+			} else {
+				coloredImg.Set(x, y, bg)
+			}
+		}
+	}
+
+	return coloredImg
 }

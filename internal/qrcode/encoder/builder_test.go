@@ -3,6 +3,7 @@ package encoder
 import (
 	"encoding/base64"
 	"fmt"
+	"image/color"
 	"reflect"
 	"testing"
 
@@ -22,6 +23,16 @@ var (
 	globalLevel  = qrcode.ErrorCorrectionLevelLow
 	globalWidth  = qrcode.DefaultWidth
 	globalHeight = qrcode.DefaultHeight
+	globalForeground = color.RGBA{
+		R: 51,
+		G: 51,
+		B: 51,
+	}
+	globalBackground = color.RGBA{
+		R: 254,
+		G: 254,
+		B: 254,
+	}
 )
 
 func encode2QR(data any) qrcode.QRCode {
@@ -40,7 +51,7 @@ func encode2QR(data any) qrcode.QRCode {
 	}
 
 	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, globalWidth, globalHeight, hints)
-	return newQRCode(b)
+	return newQRCode(b, globalForeground, globalBackground)
 }
 
 func formatWiFiNetwork(securityType qrcode.WiFiSecurityType, ssid, password string, hidden bool) string {
@@ -89,6 +100,8 @@ func TestQREncode(t *testing.T) {
 				SetErrorCorrectionLevel(globalLevel).
 				SetWidth(globalWidth).
 				SetHeight(globalHeight).
+				SetForeground(globalForeground).
+				SetBackground(globalBackground).
 				SetContent(tt.content).
 				Build()
 			if err != nil {

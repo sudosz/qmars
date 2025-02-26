@@ -1,11 +1,17 @@
 package qrcode
 
-import "image"
+import (
+	"image"
+	"image/color"
+)
 
 type QRCode interface {
 	ToBoolArray() [][]bool
 	ToImage() image.Image
-	ToString(set string, unset string) string
+	Background() color.Color
+	Foreground() color.Color
+	ToString(set, unset string) string
+	ToColoredString(set, unset string) string
 }
 
 type ErrorCorrectionLevel uint8
@@ -82,4 +88,9 @@ const (
 const (
 	DefaultWidth  = 14
 	DefaultHeight = 14
+)
+
+var (
+	DefaultForeground = color.Black
+	DefaultBackground = color.White
 )

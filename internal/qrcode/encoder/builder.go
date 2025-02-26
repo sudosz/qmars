@@ -3,6 +3,7 @@ package encoder
 import (
 	"errors"
 	"image"
+	icolor "image/color"
 
 	"github.com/makiuchi-d/gozxing"
 	gqrcode "github.com/makiuchi-d/gozxing/qrcode"
@@ -11,14 +12,25 @@ import (
 )
 
 type qrCode struct {
-	bArr [][]bool
+	bArr   [][]bool
+	fg, bg icolor.Color
 	*gozxing.BitMatrix
 }
 
-func newQRCode(bit *gozxing.BitMatrix) qrcode.QRCode {
+func newQRCode(bit *gozxing.BitMatrix, fg, bg icolor.Color) qrcode.QRCode {
 	return qrCode{
 		BitMatrix: bit,
+		fg:        fg,
+		bg:        bg,
 	}
+}
+
+func (q qrCode) Foreground() icolor.Color {
+	return q.fg
+}
+
+func (q qrCode) Background() icolor.Color {
+	return q.bg
 }
 
 func (q qrCode) GetBitMatrix() *gozxing.BitMatrix {
@@ -39,7 +51,14 @@ func (q qrCode) ToBoolArray() [][]bool {
 }
 
 func (q qrCode) ToImage() image.Image {
-	return q
+	if q.fg == qrcode.DefaultForeground && q.bg == qrcode.DefaultBackground {
+		return q
+	}
+	return coloredImage(q, qrcode.DefaultForeground, q.fg, q.bg)
+}
+
+func (q qrCode) ToColoredString(set, unset string) string {
+	return colorizeString(q.ToString(set, unset), q.fg, q.bg)
 }
 
 type QRCodeBuilder struct {
@@ -49,6 +68,7 @@ type QRCodeBuilder struct {
 	disableBorder bool
 	width         int
 	height        int
+	fg, bg        icolor.Color
 }
 
 func NewQRCodeBuilder() *QRCodeBuilder {
@@ -57,6 +77,8 @@ func NewQRCodeBuilder() *QRCodeBuilder {
 		version: qrcode.DefaultVersion,
 		width:   qrcode.DefaultWidth,
 		height:  qrcode.DefaultHeight,
+		fg:      qrcode.DefaultForeground,
+		bg:      qrcode.DefaultBackground,
 	}
 }
 
@@ -90,6 +112,16 @@ func (b *QRCodeBuilder) SetHeight(h int) *QRCodeBuilder {
 	return b
 }
 
+func (b *QRCodeBuilder) SetForeground(fg icolor.Color) *QRCodeBuilder {
+	b.fg = fg
+	return b
+}
+
+func (b *QRCodeBuilder) SetBackground(bg icolor.Color) *QRCodeBuilder {
+	b.bg = bg
+	return b
+}
+
 func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
 	if b.content == nil {
 		return nil, errors.New("content is empty")
@@ -113,5 +145,5 @@ func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
 		return nil, err
 	}
 
-	return newQRCode(bit), nil
+	return newQRCode(bit, b.fg, b.bg), nil
 }
