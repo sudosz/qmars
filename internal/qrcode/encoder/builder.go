@@ -2,7 +2,7 @@ package encoder
 
 import (
 	"errors"
-	icolor "image/color"
+	"image/color"
 
 	"github.com/makiuchi-d/gozxing"
 	gqrcode "github.com/makiuchi-d/gozxing/qrcode"
@@ -15,10 +15,10 @@ type QRCodeBuilder struct {
 	level         qrcode.ErrorCorrectionLevel
 	version       qrcode.Version
 	disableBorder bool
-	invert bool
+	invert        bool
 	width         int
 	height        int
-	fg, bg        icolor.Color
+	fg, bg        color.Color
 }
 
 func NewQRCodeBuilder() *QRCodeBuilder {
@@ -62,12 +62,12 @@ func (b *QRCodeBuilder) SetHeight(h int) *QRCodeBuilder {
 	return b
 }
 
-func (b *QRCodeBuilder) SetForeground(fg icolor.Color) *QRCodeBuilder {
+func (b *QRCodeBuilder) SetForeground(fg color.Color) *QRCodeBuilder {
 	b.fg = fg
 	return b
 }
 
-func (b *QRCodeBuilder) SetBackground(bg icolor.Color) *QRCodeBuilder {
+func (b *QRCodeBuilder) SetBackground(bg color.Color) *QRCodeBuilder {
 	b.bg = bg
 	return b
 }
@@ -98,6 +98,6 @@ func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return qrcode.NewQRCode(bit, b.invert, b.fg, b.bg), nil
 }

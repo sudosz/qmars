@@ -1,7 +1,7 @@
 package qrcode
 
 import (
-	icolor "image/color"
+	"image/color"
 	"io"
 	"strconv"
 )
@@ -21,31 +21,40 @@ func getCharOfBlockBools(bools ...bool) uint8 {
 }
 
 const (
-	foreground = "\x1b[38;2;"
-	background = "\x1b[48;2;"
-	reset      = "\x1b[0m"
-	ender      = "m"
+	foreground = 38
+	background = 48
+	reset      = 0
 )
 
-func writeColor(w io.StringWriter, prefix string, r, g, b uint32) {
-	w.WriteString(prefix)
-	w.WriteString(strconv.Itoa(int(r >> 8)))
-	w.WriteString(";")
-	w.WriteString(strconv.Itoa(int(g >> 8)))
-	w.WriteString(";")
-	w.WriteString(strconv.Itoa(int(b >> 8)))
-	w.WriteString(ender)
+func appendColor(b []byte, params ...int64) []byte {
+	b = append(b, "\x1b["...)
+	for i, param := range params {
+		if i > 0 {
+			b = append(b, ';')
+		}
+		b = strconv.AppendInt(b, param, 10)
+	}
+	return append(b, 'm')
 }
 
-func writeColoredBlock(w io.StringWriter, block string, fg, bg icolor.Color) {
+func writeColor(w io.Writer, fg, bg color.Color) {
 	fR, fG, fB, fA := fg.RGBA()
 	bR, bG, bB, bA := bg.RGBA()
+	if fA == 0 && bA == 0 {
+		return
+	}
+
+	var b []byte
 	if fA != 0 {
-		writeColor(w, foreground, fR, fG, fB)
+		b = appendColor(b, foreground, 2, int64(fR>>8), int64(fG>>8), int64(fB>>8))
 	}
 	if bA != 0 {
-		writeColor(w, background, bR, bG, bB)
+		b = appendColor(b, background, 2, int64(bR>>8), int64(bG>>8), int64(bB>>8))
 	}
-	w.WriteString(block)
-	w.WriteString(reset)
+
+	w.Write(b)
+}
+
+func resetColor(w io.Writer) {
+	w.Write(appendColor(nil, reset))
 }

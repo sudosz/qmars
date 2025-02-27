@@ -2,7 +2,7 @@ package qrcode
 
 import (
 	"image"
-	icolor "image/color"
+	"image/color"
 	"strings"
 
 	"golang.org/x/image/draw"
@@ -10,7 +10,7 @@ import (
 
 type qrCode struct {
 	bArr   [][]bool
-	fg, bg icolor.Color
+	fg, bg color.Color
 	invert bool
 	w, h   int
 	BitMatrix
@@ -18,21 +18,22 @@ type qrCode struct {
 
 type QRCode interface {
 	image.Image
-	SetForeground(fg icolor.Color)
-	SetBackground(bg icolor.Color)
+	SetForeground(fg color.Color)
+	SetBackground(bg color.Color)
 	SetWidth(w int)
 	SetHeight(h int)
 	SetInvert(i bool)
 
-	GetForeground() icolor.Color
-	GetBackground() icolor.Color
+	GetForeground() color.Color
+	GetBackground() color.Color
 	GetWidth() int
 	GetHeight() int
 
 	ToBoolArray() [][]bool
 	ToSmallString() string
-	ToString(set, unset string) string
+	ToString(StringBlock) string
 	ToResizedImage(w, h int) image.Image
+	ToImageWithBlock(block image.Image) image.Image
 }
 
 type BitMatrix interface {
@@ -41,7 +42,7 @@ type BitMatrix interface {
 	Get(x, y int) bool
 }
 
-func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *qrCode {
+func NewQRCode(b BitMatrix, invert bool, colors ...color.Color) *qrCode {
 	qr := &qrCode{
 		BitMatrix: b,
 		w:         b.GetWidth(),
@@ -62,22 +63,22 @@ func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *qrCode {
 	}
 
 	if invert {
-		qr.fg, qr.bg = qr.bg, qr.fg 
+		qr.fg, qr.bg = qr.bg, qr.fg
 	}
 
 	return qr
 }
 
-func (q *qrCode) SetForeground(fg icolor.Color) { q.fg = fg }
-func (q *qrCode) SetBackground(bg icolor.Color) { q.bg = bg }
-func (q *qrCode) SetWidth(w int)                { q.w = w }
-func (q *qrCode) SetHeight(h int)               { q.h = h }
-func (q *qrCode) SetInvert(i bool)              { q.invert = i }
+func (q *qrCode) SetForeground(fg color.Color) { q.fg = fg }
+func (q *qrCode) SetBackground(bg color.Color) { q.bg = bg }
+func (q *qrCode) SetWidth(w int)               { q.w = w }
+func (q *qrCode) SetHeight(h int)              { q.h = h }
+func (q *qrCode) SetInvert(i bool)             { q.invert = i }
 
-func (q qrCode) GetForeground() icolor.Color { return q.fg }
-func (q qrCode) GetBackground() icolor.Color { return q.bg }
-func (q qrCode) GetWidth() int               { return q.w }
-func (q qrCode) GetHeight() int              { return q.h }
+func (q qrCode) GetForeground() color.Color { return q.fg }
+func (q qrCode) GetBackground() color.Color { return q.bg }
+func (q qrCode) GetWidth() int              { return q.w }
+func (q qrCode) GetHeight() int             { return q.h }
 
 func (q qrCode) ToBoolArray() [][]bool {
 	q.bArr = make([][]bool, q.h)
@@ -96,7 +97,9 @@ func (q qrCode) ToSmallString() string {
 
 	for i := 0; i < q.h; i += 2 {
 		for j := 0; j < q.w; j++ {
-			writeColoredBlock(&sb, string(smallChars[getCharOfBlockBools(q.Get(i, j), q.Get(i+1, j))]), q.fg, q.bg)
+			writeColor(&sb, q.fg, q.bg)
+			sb.WriteRune(smallChars[getCharOfBlockBools(q.Get(i, j), q.Get(i+1, j))])
+			resetColor(&sb)
 		}
 		sb.WriteRune('\n')
 	}
@@ -104,17 +107,22 @@ func (q qrCode) ToSmallString() string {
 	return sb.String()
 }
 
-func (q qrCode) ToString(set, unset string) string {
+func (q qrCode) ToString(b StringBlock) string {
 	var sb strings.Builder
-	l := 1 + q.w*max(len(set), len(unset))
-	sb.Grow(l * q.h)
+	bw, bh := b.Bounds()
+	l := 1 + q.w*bw
+	sb.Grow(l * q.h * bh)
 
-	for i := 0; i < q.h; i++ {
-		for j := 0; j < q.w; j++ {
-			if q.Get(j, i) {
-				writeColoredBlock(&sb, set, q.fg, q.bg)
+	for i := 0; i < q.h*bh; i++ {
+		for j := 0; j < q.w*bw; j++ {
+			if q.Get(j/bw, i/bh) {
+				writeColor(&sb, q.fg, q.bg)
+				sb.WriteRune(b.At(j%bw, i%bh))
+				resetColor(&sb)
 			} else {
-				writeColoredBlock(&sb, unset, q.bg, q.bg)
+				writeColor(&sb, q.bg, q.bg)
+				sb.WriteRune(' ')
+				resetColor(&sb)
 			}
 		}
 		sb.WriteRune('\n')
@@ -129,16 +137,45 @@ func (q qrCode) ToResizedImage(w, h int) image.Image {
 	return dst
 }
 
-func (q qrCode) ColorModel() icolor.Model { return icolor.RGBAModel }
+func (q qrCode) ColorModel() color.Model { return color.RGBAModel }
 
 func (q qrCode) Bounds() image.Rectangle {
 	return image.Rect(0, 0, q.GetWidth(), q.GetHeight())
 }
 
-func (q qrCode) At(x, y int) icolor.Color {
+func (q qrCode) At(x, y int) color.Color {
 	c := q.bg
 	if q.Get(x, y) {
 		c = q.fg
 	}
 	return c
+}
+
+type customBlockQRCode struct {
+	b    image.Image
+	w, h int
+	qrCode
+}
+
+func (q customBlockQRCode) ColorModel() color.Model { return color.RGBAModel }
+
+func (q customBlockQRCode) Bounds() image.Rectangle {
+	return image.Rect(0, 0, q.w, q.h)
+}
+
+func (q customBlockQRCode) At(x, y int) color.Color {
+	c := q.bg
+	realX, realY := x/q.b.Bounds().Dx(), y/q.b.Bounds().Dy()
+	if q.Get(realX, realY) {
+		c = q.b.At(x%q.b.Bounds().Dx(), y%q.b.Bounds().Dy())
+	}
+	if _, _, _, a := c.RGBA(); a == 0 {
+		return q.bg
+	}
+	return c
+}
+
+func (q qrCode) ToImageWithBlock(block image.Image) image.Image {
+	w, h := block.Bounds().Dx(), block.Bounds().Dy()
+	return customBlockQRCode{b: block, qrCode: q, w: q.GetWidth() * w, h: q.GetHeight() * h}
 }
