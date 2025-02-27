@@ -61,6 +61,10 @@ func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *qrCode {
 		qr.bg = DefaultBackground
 	}
 
+	if invert {
+		qr.fg, qr.bg = qr.bg, qr.fg 
+	}
+
 	return qr
 }
 
@@ -90,14 +94,10 @@ func (q qrCode) ToSmallString() string {
 	var sb strings.Builder
 	sb.Grow((q.w + 1) * (q.h / 2))
 
-	printer := createColorPrinter(q.fg, q.bg)
-
 	for i := 0; i < q.h; i += 2 {
-		printer.SetWriter(&sb)
 		for j := 0; j < q.w; j++ {
-			sb.WriteRune(smallChars[getCharOfBlockBools(q.invert, q.Get(i, j), q.Get(i+1, j))])
+			writeColoredBlock(&sb, string(smallChars[getCharOfBlockBools(q.Get(i, j), q.Get(i+1, j))]), q.fg, q.bg)
 		}
-		printer.UnsetWriter(&sb)
 		sb.WriteRune('\n')
 	}
 
@@ -109,22 +109,14 @@ func (q qrCode) ToString(set, unset string) string {
 	l := 1 + q.w*max(len(set), len(unset))
 	sb.Grow(l * q.h)
 
-	printer := createColorPrinter(q.fg, q.bg)
-
-	if q.invert {
-		set, unset = unset, set
-	}
-
 	for i := 0; i < q.h; i++ {
-		printer.SetWriter(&sb)
 		for j := 0; j < q.w; j++ {
 			if q.Get(j, i) {
-				sb.WriteString(set)
+				writeColoredBlock(&sb, set, q.fg, q.bg)
 			} else {
-				sb.WriteString(unset)
+				writeColoredBlock(&sb, unset, q.bg, q.bg)
 			}
 		}
-		printer.UnsetWriter(&sb)
 		sb.WriteRune('\n')
 	}
 

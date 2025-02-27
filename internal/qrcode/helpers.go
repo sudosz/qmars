@@ -2,36 +2,50 @@ package qrcode
 
 import (
 	icolor "image/color"
-
-	"github.com/fatih/color"
+	"io"
+	"strconv"
 )
 
 var (
 	smallChars = [4]rune{' ', '▀', '▄', '█'}
 )
 
-func getCharOfBlockBools(invert bool, bools ...bool) uint8 {
+func getCharOfBlockBools(bools ...bool) uint8 {
 	var idx uint8
 	for i, b := range bools {
 		if b {
 			idx |= 1 << i
 		}
 	}
-	if invert {
-		return ^idx & 0b11
-	}
 	return idx
 }
 
-func createColorPrinter(fg, bg icolor.Color) *color.Color {
+const (
+	foreground = "\x1b[38;2;"
+	background = "\x1b[48;2;"
+	reset      = "\x1b[0m"
+	ender      = "m"
+)
+
+func writeColor(w io.StringWriter, prefix string, r, g, b uint32) {
+	w.WriteString(prefix)
+	w.WriteString(strconv.Itoa(int(r >> 8)))
+	w.WriteString(";")
+	w.WriteString(strconv.Itoa(int(g >> 8)))
+	w.WriteString(";")
+	w.WriteString(strconv.Itoa(int(b >> 8)))
+	w.WriteString(ender)
+}
+
+func writeColoredBlock(w io.StringWriter, block string, fg, bg icolor.Color) {
 	fR, fG, fB, fA := fg.RGBA()
 	bR, bG, bB, bA := bg.RGBA()
-	c := color.New()
 	if fA != 0 {
-		c = c.AddRGB(int(fR>>8), int(fG>>8), int(fB>>8))
-	} 
-	if bA != 0 {
-		c = c.AddBgRGB(int(bR>>8), int(bG>>8), int(bB>>8))
+		writeColor(w, foreground, fR, fG, fB)
 	}
-	return c
+	if bA != 0 {
+		writeColor(w, background, bR, bG, bB)
+	}
+	w.WriteString(block)
+	w.WriteString(reset)
 }
