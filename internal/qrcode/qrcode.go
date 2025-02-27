@@ -8,12 +8,31 @@ import (
 	"golang.org/x/image/draw"
 )
 
-type QRCode struct {
+type qrCode struct {
 	bArr   [][]bool
 	fg, bg icolor.Color
 	invert bool
 	w, h   int
 	BitMatrix
+}
+
+type QRCode interface {
+	image.Image
+	SetForeground(fg icolor.Color)
+	SetBackground(bg icolor.Color)
+	SetWidth(w int)
+	SetHeight(h int)
+	SetInvert(i bool)
+
+	GetForeground() icolor.Color
+	GetBackground() icolor.Color
+	GetWidth() int
+	GetHeight() int
+
+	ToBoolArray() [][]bool
+	ToSmallString() string
+	ToString(set, unset string) string
+	ToResizedImage(w, h int) image.Image
 }
 
 type BitMatrix interface {
@@ -22,8 +41,8 @@ type BitMatrix interface {
 	Get(x, y int) bool
 }
 
-func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *QRCode {
-	qr := &QRCode{
+func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *qrCode {
+	qr := &qrCode{
 		BitMatrix: b,
 		w:         b.GetWidth(),
 		h:         b.GetHeight(),
@@ -45,18 +64,18 @@ func NewQRCode(b BitMatrix, invert bool, colors ...icolor.Color) *QRCode {
 	return qr
 }
 
-func (q *QRCode) SetForeground(fg icolor.Color) { q.fg = fg }
-func (q *QRCode) SetBackground(bg icolor.Color) { q.bg = bg }
-func (q *QRCode) SetWidth(w int)                { q.w = w }
-func (q *QRCode) SetHeight(h int)               { q.h = h }
-func (q *QRCode) SetInvert(i bool)              { q.invert = i }
+func (q *qrCode) SetForeground(fg icolor.Color) { q.fg = fg }
+func (q *qrCode) SetBackground(bg icolor.Color) { q.bg = bg }
+func (q *qrCode) SetWidth(w int)                { q.w = w }
+func (q *qrCode) SetHeight(h int)               { q.h = h }
+func (q *qrCode) SetInvert(i bool)              { q.invert = i }
 
-func (q QRCode) GetForeground() icolor.Color { return q.fg }
-func (q QRCode) GetBackground() icolor.Color { return q.bg }
-func (q QRCode) GetWidth() int               { return q.w }
-func (q QRCode) GetHeight() int              { return q.h }
+func (q qrCode) GetForeground() icolor.Color { return q.fg }
+func (q qrCode) GetBackground() icolor.Color { return q.bg }
+func (q qrCode) GetWidth() int               { return q.w }
+func (q qrCode) GetHeight() int              { return q.h }
 
-func (q QRCode) ToBoolArray() [][]bool {
+func (q qrCode) ToBoolArray() [][]bool {
 	q.bArr = make([][]bool, q.h)
 	for i := 0; i < q.h; i++ {
 		q.bArr[i] = make([]bool, q.w)
@@ -67,7 +86,7 @@ func (q QRCode) ToBoolArray() [][]bool {
 	return q.bArr
 }
 
-func (q QRCode) ToSmallString() string {
+func (q qrCode) ToSmallString() string {
 	var sb strings.Builder
 	sb.Grow((q.w + 1) * (q.h / 2))
 
@@ -85,7 +104,7 @@ func (q QRCode) ToSmallString() string {
 	return sb.String()
 }
 
-func (q QRCode) ToString(set, unset string) string {
+func (q qrCode) ToString(set, unset string) string {
 	var sb strings.Builder
 	l := 1 + q.w*max(len(set), len(unset))
 	sb.Grow(l * q.h)
@@ -112,19 +131,19 @@ func (q QRCode) ToString(set, unset string) string {
 	return sb.String()
 }
 
-func (q QRCode) ToResizedImage(w, h int) image.Image {
+func (q qrCode) ToResizedImage(w, h int) image.Image {
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.NearestNeighbor.Scale(dst, dst.Rect, q, q.Bounds(), draw.Over, nil)
 	return dst
 }
 
-func (q QRCode) ColorModel() icolor.Model { return icolor.RGBAModel }
+func (q qrCode) ColorModel() icolor.Model { return icolor.RGBAModel }
 
-func (q QRCode) Bounds() image.Rectangle {
+func (q qrCode) Bounds() image.Rectangle {
 	return image.Rect(0, 0, q.GetWidth(), q.GetHeight())
 }
 
-func (q QRCode) At(x, y int) icolor.Color {
+func (q qrCode) At(x, y int) icolor.Color {
 	c := q.bg
 	if q.Get(x, y) {
 		c = q.fg

@@ -35,7 +35,7 @@ var (
 	}
 )
 
-func encode2QR(data any) *qrcode.QRCode {
+func encode2QR(data any) qrcode.QRCode {
 	var s string
 
 	switch v := data.(type) {
@@ -66,7 +66,7 @@ func TestQREncode(t *testing.T) {
 	tests := []struct {
 		name     string
 		content  Content
-		expected *qrcode.QRCode
+		expected qrcode.QRCode
 	}{
 		{
 			name:     "StringContent",
