@@ -21,8 +21,6 @@ var (
 	testHiddenStatus     = true
 
 	globalLevel      = qrcode.ErrorCorrectionLevelLow
-	globalWidth      = qrcode.DefaultWidth
-	globalHeight     = qrcode.DefaultHeight
 	globalForeground = color.RGBA{
 		R: 51,
 		G: 51,
@@ -50,7 +48,7 @@ func encode2QR(data any) qrcode.QRCode {
 		gozxing.EncodeHintType_ERROR_CORRECTION: ecLevelToGozxingECLevel(globalLevel),
 	}
 
-	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, globalWidth, globalHeight, hints)
+	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, 0, 0, hints)
 	return qrcode.NewQRCode(b, false, globalForeground, globalBackground)
 }
 
@@ -98,8 +96,6 @@ func TestQREncode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			out, err := NewQRCodeBuilder().
 				SetErrorCorrectionLevel(globalLevel).
-				SetWidth(globalWidth).
-				SetHeight(globalHeight).
 				SetForeground(globalForeground).
 				SetBackground(globalBackground).
 				SetContent(tt.content).

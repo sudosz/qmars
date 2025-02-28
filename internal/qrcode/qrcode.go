@@ -20,8 +20,6 @@ type QRCode interface {
 	image.Image
 	SetForeground(fg color.Color)
 	SetBackground(bg color.Color)
-	SetWidth(w int)
-	SetHeight(h int)
 	SetInvert(i bool)
 
 	GetForeground() color.Color
@@ -71,8 +69,6 @@ func NewQRCode(b BitMatrix, invert bool, colors ...color.Color) *qrCode {
 
 func (q *qrCode) SetForeground(fg color.Color) { q.fg = fg }
 func (q *qrCode) SetBackground(bg color.Color) { q.bg = bg }
-func (q *qrCode) SetWidth(w int)               { q.w = w }
-func (q *qrCode) SetHeight(h int)              { q.h = h }
 func (q *qrCode) SetInvert(i bool)             { q.invert = i }
 
 func (q qrCode) GetForeground() color.Color { return q.fg }
