@@ -63,7 +63,7 @@ func (b *QRCodeBuilder) SetInvert(i bool) *QRCodeBuilder {
 	return b
 }
 
-func (b *QRCodeBuilder) Build() (qrcode.QRCode, error) {
+func (b *QRCodeBuilder) Build() (*qrcode.QRCode, error) {
 	if b.content == nil {
 		return nil, errors.New("content is empty")
 	}
