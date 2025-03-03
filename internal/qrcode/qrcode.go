@@ -12,6 +12,7 @@ type QRCode struct {
 	bArr   [][]bool
 	fg, bg color.Color
 	invert bool
+	margin int
 	w, h   int
 	BitMatrix
 }
@@ -22,24 +23,24 @@ type BitMatrix interface {
 	Get(x, y int) bool
 }
 
-func NewQRCode(b BitMatrix, invert bool, colors ...color.Color) *QRCode {
+func NewQRCode(b BitMatrix, invert bool, margin int, colors ...color.Color) *QRCode {
 	qr := &QRCode{
 		BitMatrix: b,
 		w:         b.GetWidth(),
 		h:         b.GetHeight(),
+		margin:    margin,
 		invert:    invert,
 	}
 
+	qr.fg = DefaultForeground
+	qr.bg = DefaultBackground
+
 	if len(colors) > 0 {
 		qr.fg = colors[0]
-	} else {
-		qr.fg = DefaultForeground
 	}
 
 	if len(colors) > 1 {
 		qr.bg = colors[1]
-	} else {
-		qr.bg = DefaultBackground
 	}
 
 	if invert {
@@ -57,6 +58,7 @@ func (q QRCode) GetForeground() color.Color { return q.fg }
 func (q QRCode) GetBackground() color.Color { return q.bg }
 func (q QRCode) GetWidth() int              { return q.w }
 func (q QRCode) GetHeight() int             { return q.h }
+func (q QRCode) GetMarginSize() int         { return q.margin }
 
 func (q QRCode) ToBoolArray() [][]bool {
 	q.bArr = make([][]bool, q.h)
@@ -122,11 +124,10 @@ func (q QRCode) Bounds() image.Rectangle {
 }
 
 func (q QRCode) At(x, y int) color.Color {
-	c := q.bg
 	if q.Get(x, y) {
-		c = q.fg
+		return q.fg
 	}
-	return c
+	return q.bg
 }
 
 type customBlockQRCode struct {

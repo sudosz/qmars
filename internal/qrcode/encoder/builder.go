@@ -11,12 +11,12 @@ import (
 )
 
 type QRCodeBuilder struct {
-	content       Content
-	level         qrcode.ErrorCorrectionLevel
-	version       qrcode.Version
-	disableBorder bool
-	invert        bool
-	fg, bg        color.Color
+	content Content
+	level   qrcode.ErrorCorrectionLevel
+	version qrcode.Version
+	margin  int
+	invert  bool
+	fg, bg  color.Color
 }
 
 func NewQRCodeBuilder() *QRCodeBuilder {
@@ -25,6 +25,7 @@ func NewQRCodeBuilder() *QRCodeBuilder {
 		version: qrcode.DefaultVersion,
 		fg:      qrcode.DefaultForeground,
 		bg:      qrcode.DefaultBackground,
+		margin:  qrcode.DefaultMarginSize,
 	}
 }
 
@@ -43,8 +44,8 @@ func (b *QRCodeBuilder) SetVersion(v qrcode.Version) *QRCodeBuilder {
 	return b
 }
 
-func (b *QRCodeBuilder) SetDisableBorder(disableBorder bool) *QRCodeBuilder {
-	b.disableBorder = disableBorder
+func (b *QRCodeBuilder) SetMarginSize(m int) *QRCodeBuilder {
+	b.margin = m
 	return b
 }
 
@@ -72,10 +73,7 @@ func (b *QRCodeBuilder) Build() (*qrcode.QRCode, error) {
 
 	hints := map[gozxing.EncodeHintType]interface{}{
 		gozxing.EncodeHintType_ERROR_CORRECTION: ecLevelToGozxingECLevel(b.level),
-		gozxing.EncodeHintType_MARGIN: 4,
-	}
-	if b.disableBorder {
-		hints[gozxing.EncodeHintType_MARGIN] = 0
+		gozxing.EncodeHintType_MARGIN:           b.margin,
 	}
 	if b.version > 0 {
 		hints[gozxing.EncodeHintType_QR_VERSION] = b.version
@@ -86,5 +84,5 @@ func (b *QRCodeBuilder) Build() (*qrcode.QRCode, error) {
 		return nil, err
 	}
 
-	return qrcode.NewQRCode(bit, b.invert, b.fg, b.bg), nil
+	return qrcode.NewQRCode(bit, b.invert, b.margin, b.fg, b.bg), nil
 }

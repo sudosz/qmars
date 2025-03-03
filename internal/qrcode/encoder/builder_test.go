@@ -31,6 +31,7 @@ var (
 		G: 254,
 		B: 254,
 	}
+	globalMarginSize = qrcode.DefaultMarginSize
 )
 
 func encode2QR(data any) *qrcode.QRCode {
@@ -49,7 +50,7 @@ func encode2QR(data any) *qrcode.QRCode {
 	}
 
 	b, _ := enc.Encode(s, gozxing.BarcodeFormat_QR_CODE, 0, 0, hints)
-	return qrcode.NewQRCode(b, false, globalForeground, globalBackground)
+	return qrcode.NewQRCode(b, false, globalMarginSize, globalForeground, globalBackground)
 }
 
 func formatWiFiNetwork(securityType qrcode.WiFiSecurityType, ssid, password string, hidden bool) string {
@@ -98,6 +99,7 @@ func TestQREncode(t *testing.T) {
 				SetErrorCorrectionLevel(globalLevel).
 				SetForeground(globalForeground).
 				SetBackground(globalBackground).
+				SetMarginSize(globalMarginSize).
 				SetContent(tt.content).
 				Build()
 			if assert.NoError(t, err) {

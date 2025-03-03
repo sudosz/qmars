@@ -76,8 +76,7 @@ const (
 )
 
 const (
-	DefaultWidth  = 14
-	DefaultHeight = 14
+	DefaultMarginSize = 4
 )
 
 var (
