@@ -183,10 +183,10 @@ func (q customBlockQRCode) At(x, y int) color.Color {
 }
 
 func (q customBlockQRCode) checkInPatterns(w, h, x, y int) (color.Color, bool) {
-	// Check timing patterns
-	if (x == w-9 || x == w-5) && (h-10 < y && y < h-4) ||
+	// Check alignment patterns
+	if w > 21 && h > 21 && ((x == w-9 || x == w-5) && (h-10 < y && y < h-4) ||
 		(y == h-9 || y == h-5) && (w-10 < x && x < w-4) ||
-		(x == w-7 && y == h-7) {
+		(x == w-7 && y == h-7)) {
 		return q.GetForeground(), true
 	}
 
@@ -195,7 +195,7 @@ func (q customBlockQRCode) checkInPatterns(w, h, x, y int) (color.Color, bool) {
 		return nil, false
 	}
 
-	// Check finder patterns
+	// Check position detection patterns
 	if (x < 7 || x >= w-7) && (y < 7 || y >= h-7) {
 		if x == 0 || x == 6 || x == w-7 || x == w-1 ||
 			y == 0 || y == 6 || y == h-7 || y == h-1 {
@@ -203,7 +203,7 @@ func (q customBlockQRCode) checkInPatterns(w, h, x, y int) (color.Color, bool) {
 		}
 	}
 
-	// Check alignment patterns
+	// Check position detection patterns
 	if pt.In(image.Rect(2, 2, 5, 5)) ||
 		pt.In(image.Rect(w-5, 2, w-2, 5)) ||
 		pt.In(image.Rect(2, h-5, 5, h-2)) {
