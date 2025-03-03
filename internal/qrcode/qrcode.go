@@ -50,9 +50,20 @@ func NewQRCode(b BitMatrix, invert bool, margin int, colors ...color.Color) *QRC
 	return qr
 }
 
-func (q *QRCode) SetForeground(fg color.Color) { q.fg = fg }
-func (q *QRCode) SetBackground(bg color.Color) { q.bg = bg }
-func (q *QRCode) SetInvert(i bool)             { q.invert = i }
+func (q *QRCode) SetForeground(fg color.Color) *QRCode {
+	q.fg = fg
+	return q
+}
+
+func (q *QRCode) SetBackground(bg color.Color) *QRCode {
+	q.bg = bg
+	return q
+}
+
+func (q *QRCode) SetInvert(i bool) *QRCode {
+	q.invert = i
+	return q
+}
 
 func (q QRCode) GetForeground() color.Color { return q.fg }
 func (q QRCode) GetBackground() color.Color { return q.bg }
@@ -61,11 +72,15 @@ func (q QRCode) GetHeight() int             { return q.h }
 func (q QRCode) GetMarginSize() int         { return q.margin }
 
 func (q QRCode) ToBoolArray() [][]bool {
-	q.bArr = make([][]bool, q.h)
-	for i := 0; i < q.h; i++ {
-		q.bArr[i] = make([]bool, q.w)
-		for j := 0; j < q.w; j++ {
-			q.bArr[i][j] = q.Get(j, i)
+	if q.bArr == nil {
+		// Pre-allocate the entire 2D slice at once
+		q.bArr = make([][]bool, q.h)
+		data := make([]bool, q.w*q.h)
+		for i := range q.bArr {
+			q.bArr[i] = data[i*q.w : (i+1)*q.w]
+			for j := 0; j < q.w; j++ {
+				q.bArr[i][j] = q.Get(j, i)
+			}
 		}
 	}
 	return q.bArr
@@ -81,7 +96,7 @@ func (q QRCode) ToSmallString() string {
 			sb.WriteRune(smallChars[getCharOfBlockBools(q.Get(i, j), q.Get(i+1, j))])
 			resetColor(&sb)
 		}
-		sb.WriteRune('\n')
+		sb.WriteByte('\n')
 	}
 
 	return sb.String()
@@ -101,11 +116,11 @@ func (q QRCode) ToString(b StringBlock) string {
 				resetColor(&sb)
 			} else {
 				writeColor(&sb, q.bg, q.bg)
-				sb.WriteRune(' ')
+				sb.WriteByte(' ')
 				resetColor(&sb)
 			}
 		}
-		sb.WriteRune('\n')
+		sb.WriteByte('\n')
 	}
 
 	return sb.String()
@@ -143,21 +158,28 @@ func (q customBlockQRCode) Bounds() image.Rectangle {
 }
 
 func (q customBlockQRCode) At(x, y int) color.Color {
-	c := q.bg
-	realX, realY := x/q.b.Bounds().Dx(), y/q.b.Bounds().Dy()
+	blockW, blockH := q.b.Bounds().Dx(), q.b.Bounds().Dy()
+	realX, realY := x/blockW, y/blockH
 	ms := q.GetMarginSize()
-	r := image.Rect(ms, ms, q.GetWidth()-ms, q.GetHeight()-ms)
-	if image.Pt(realX, realY).In(r) {
-		if cl, ok := q.checkInPatterns(q.GetWidth()-2*ms, q.GetHeight()-2*ms, realX-ms, realY-ms); ok {
-			c = cl
-		} else if q.Get(realX, realY) {
-			c = q.b.At(x%q.b.Bounds().Dx(), y%q.b.Bounds().Dy())
-		}
-	}
-	if _, _, _, a := c.RGBA(); a == 0 {
+
+	// Early return for margin area
+	if realX < ms || realY < ms || realX >= q.GetWidth()-ms || realY >= q.GetHeight()-ms {
 		return q.bg
 	}
-	return c
+
+	adjustedX, adjustedY := realX-ms, realY-ms
+	if color, isPattern := q.checkInPatterns(q.GetWidth()-2*ms, q.GetHeight()-2*ms, adjustedX, adjustedY); isPattern {
+		return color
+	}
+
+	if q.Get(realX, realY) {
+		c := q.b.At(x%blockW, y%blockH)
+		if _, _, _, a := c.RGBA(); a > 0 {
+			return c
+		}
+	}
+
+	return q.bg
 }
 
 func (q customBlockQRCode) checkInPatterns(w, h, x, y int) (color.Color, bool) {
